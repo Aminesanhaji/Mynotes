@@ -7,9 +7,9 @@
 <li>Staggered GridView</li>
 </ul>
 
-Video Demo: https://www.youtube.com/watch?v=Fg68VND8unE <br><br>
 
-If you want to use firebase to store the notes online, check out this [repo](https://github.com/prabhashrai02/notes-app) .
+
+
 
 Screenshots:<br>
 <table style={border:"none"}><tr>
