@@ -20,6 +20,7 @@ class NoteList extends StatefulWidget {
 
 class NoteListState extends State<NoteList> {
   final DatabaseHelper databaseHelper = DatabaseHelper();
+  List<Note> fullNoteList = [];
   List<Note> noteList = [];
   int count = 0;
   int axisCount = 2;
@@ -71,30 +72,38 @@ class NoteListState extends State<NoteList> {
               ),
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'Tous') {
-                    setState(() {
-                      isFilteredByFavorite = false;
-                      priorityFilter = null;
-                    });
-                    updateListView();
-                  } else if (value == 'Favoris') {
+                  setState(() {
+                    isFilteredByFavorite = false;
+                    priorityFilter = null;
+                    noteList = List.from(fullNoteList);
+                  });
+
+                  if (value == 'Favoris') {
                     setState(() {
                       isFilteredByFavorite = true;
-                      priorityFilter = null;
-                      noteList = noteList.where((n) => n.isFavorite).toList();
+                      noteList = fullNoteList.where((n) => n.isFavorite).toList();
+                      count = noteList.length;
+                    });
+                  } else if (value == 'Low') {
+                    setState(() {
+                      priorityFilter = 3;
+                      noteList = fullNoteList.where((n) => n.priority == 3).toList();
+                      count = noteList.length;
+                    });
+                  } else if (value == 'High') {
+                    setState(() {
+                      priorityFilter = 2;
+                      noteList = fullNoteList.where((n) => n.priority == 2).toList();
+                      count = noteList.length;
+                    });
+                  } else if (value == 'Very High') {
+                    setState(() {
+                      priorityFilter = 1;
+                      noteList = fullNoteList.where((n) => n.priority == 1).toList();
                       count = noteList.length;
                     });
                   } else {
-                    int selectedPriority = 3;
-                    if (value == 'High') selectedPriority = 2;
-                    if (value == 'Very High') selectedPriority = 1;
-
-                    setState(() {
-                      isFilteredByFavorite = false;
-                      priorityFilter = selectedPriority;
-                      noteList = noteList.where((n) => n.priority == selectedPriority).toList();
-                      count = noteList.length;
-                    });
+                    updateListView();
                   }
                 },
                 itemBuilder: (BuildContext context) {
@@ -128,87 +137,64 @@ class NoteListState extends State<NoteList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: myAppBar(),
-      body: noteList.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    isFilteredByFavorite || priorityFilter != null
-                        ? 'Aucune note trouvée.'
-                        : 'Clique sur le + pour ajouter une note !',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        isFilteredByFavorite = false;
-                        priorityFilter = null;
-                      });
-                      updateListView();
-                    },
-                    child: const Text('Retour à toutes les notes'),
-                  ),
-                ],
-              ),
-            )
-          : Column(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                RichText(
+                  text: const TextSpan(
                     children: [
-                      RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '❗️',
-                              style: TextStyle(color: Colors.green, fontSize: 12),
-                            ),
-                            TextSpan(
-                              text: ' Low',
-                              style: TextStyle(color: Colors.black, fontSize: 12),
-                            ),
-                          ],
-                        ),
+                      TextSpan(
+                        text: '❗️',
+                        style: TextStyle(color: Colors.green, fontSize: 12),
                       ),
-                      RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '❗️❗️',
-                              style: TextStyle(color: Colors.orange, fontSize: 12),
-                            ),
-                            TextSpan(
-                              text: ' High',
-                              style: TextStyle(color: Colors.black, fontSize: 12),
-                            ),
-                          ],
-                        ),
+                      TextSpan(
+                        text: ' Low',
+                        style: TextStyle(color: Colors.black, fontSize: 12),
                       ),
-                      RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '❗️❗️❗️',
-                              style: TextStyle(color: Colors.red, fontSize: 12),
-                            ),
-                            TextSpan(
-                              text: ' Very High',
-                              style: TextStyle(color: Colors.black, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Text('❤️ Favori', style: TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
-                Expanded(child: buildGroupedNotes()),
+                RichText(
+                  text: const TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '❗️❗️',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
+                      ),
+                      TextSpan(
+                        text: ' High',
+                        style: TextStyle(color: Colors.black, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                RichText(
+                  text: const TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '❗️❗️❗️',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                      TextSpan(
+                        text: ' Very High',
+                        style: TextStyle(color: Colors.black, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const Text('❤️ Favori', style: TextStyle(fontSize: 12)),
               ],
             ),
+          ),
+          Expanded(
+            child: buildGroupedNotesWithDrag(),
+          )
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           navigateToDetail(Note('', '', 3, 0), 'Add Note');
@@ -222,122 +208,31 @@ class NoteListState extends State<NoteList> {
     );
   }
 
-  Widget buildGroupedNotes() {
+  Widget buildGroupedNotesWithDrag() {
     final priorities = [1, 2, 3];
-    final labels = {
-      1: 'Very High',
-      2: 'High',
-      3: 'Low',
-    };
-    final filtered = <int, List<Note>>{};
-    for (var p in priorities) {
-      filtered[p] = noteList.where((note) => note.priority == p).toList();
-    }
+    final labels = {1: 'Very High', 2: 'High', 3: 'Low'};
 
     return ListView(
       children: priorities.map((priority) {
-        final notes = filtered[priority]!;
-        if (notes.isEmpty) return const SizedBox();
+        final notes = noteList.where((note) => note.priority == priority).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                labels[priority]!,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              padding: const EdgeInsets.all(8.0),
+              child: Text(labels[priority]!,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            MasonryGridView.count(
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: axisCount,
-              shrinkWrap: true,
-              mainAxisSpacing: 4.0,
-              crossAxisSpacing: 4.0,
-              itemCount: notes.length,
-              itemBuilder: (BuildContext context, int index) {
-                final note = notes[index];
-                return GestureDetector(
-                  onTap: () {
-                    navigateToDetail(note, 'Edit Note');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: colors[note.color],
-                        border: Border.all(width: 2, color: Colors.black),
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    note.title,
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    getPriorityText(note.priority),
-                                    style: TextStyle(
-                                      color: getPriorityColor(note.priority),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      note.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () async {
-                                      note.isFavorite = !note.isFavorite;
-                                      await databaseHelper.updateNote(note);
-                                      updateListView();
-                                    },
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: <Widget>[
-                                Expanded(
-                                  child: Text(
-                                    note.description ?? '',
-                                    style: Theme.of(context).textTheme.bodyLarge,
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              Text(
-                                note.date,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
+            DragTarget<Note>(
+              onWillAccept: (incoming) => true,
+              onAccept: (incomingNote) async {
+                incomingNote.priority = priority;
+                await databaseHelper.updateNote(incomingNote);
+                updateListView();
+              },
+              builder: (context, candidateData, rejectedData) {
+                return Wrap(
+                  children: notes.map((note) => buildDraggableNote(note)).toList(),
                 );
               },
             )
@@ -347,30 +242,76 @@ class NoteListState extends State<NoteList> {
     );
   }
 
-  Color getPriorityColor(int priority) {
-    switch (priority) {
-      case 1:
-        return Colors.red;
-      case 2:
-        return Colors.orange;
-      case 3:
-        return Colors.green;
-      default:
-        return Colors.yellow;
-    }
+  Widget buildDraggableNote(Note note) {
+    return LongPressDraggable<Note>(
+      data: note,
+      feedback: Material(
+        color: Colors.transparent,
+        child: noteCard(note),
+      ),
+      childWhenDragging: Opacity(opacity: 0.4, child: noteCard(note)),
+      child: noteCard(note),
+    );
   }
 
-  String getPriorityText(int priority) {
-    switch (priority) {
-      case 1:
-        return '!!!';
-      case 2:
-        return '!!';
-      case 3:
-        return '!';
-      default:
-        return '!';
-    }
+  Widget noteCard(Note note) {
+    return GestureDetector(
+      onTap: () => navigateToDetail(note, 'Edit Note'),
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors[note.color],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(width: 2, color: Colors.black),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(note.title,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
+                IconButton(
+                  icon: Icon(
+                    note.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.red,
+                    size: 18,
+                  ),
+                  onPressed: () async {
+                    note.isFavorite = !note.isFavorite;
+                    await databaseHelper.updateNote(note);
+                    updateListView();
+                  },
+                )
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(note.description ?? '',
+                style: Theme.of(context).textTheme.bodyLarge,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 3),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(getPriorityText(note.priority),
+                    style: TextStyle(
+                        color: getPriorityColor(note.priority), fontWeight: FontWeight.bold)),
+                Text(note.date,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void navigateToDetail(Note note, String title) async {
@@ -389,10 +330,37 @@ class NoteListState extends State<NoteList> {
       Future<List<Note>> noteListFuture = databaseHelper.getNoteList();
       noteListFuture.then((noteList) {
         setState(() {
+          fullNoteList = noteList;
           this.noteList = noteList;
           count = noteList.length;
         });
       });
     });
+  }
+
+  Color getPriorityColor(int priority) {
+    switch (priority) {
+      case 1:
+        return Colors.red;
+      case 2:
+        return Colors.orange;
+      case 3:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String getPriorityText(int priority) {
+    switch (priority) {
+      case 1:
+        return '!!!';
+      case 2:
+        return '!!';
+      case 3:
+        return '!';
+      default:
+        return '!';
+    }
   }
 }
