@@ -171,15 +171,14 @@ class NoteListState extends State<NoteList> {
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Wrap(
-                    spacing: 16,
-                    runSpacing: 4,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: const [
-                      Text('❗️ Low'),
-                      Text('❗️❗️ High'),
-                      Text('❗️❗️❗️ Very High'),
-                      Text('❤️ Favori'),
+                      Text('❗️ Low', style: TextStyle(fontSize: 12)),
+                      Text('❗️❗️ High', style: TextStyle(fontSize: 12)),
+                      Text('❗️❗️❗️ Very High', style: TextStyle(fontSize: 12)),
+                      Text('❤️ Favori', style: TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
@@ -201,6 +200,11 @@ class NoteListState extends State<NoteList> {
 
   Widget buildGroupedNotes() {
     final priorities = [1, 2, 3];
+    final labels = {
+      1: 'Very High',
+      2: 'High',
+      3: 'Low',
+    };
     final filtered = <int, List<Note>>{};
     for (var p in priorities) {
       filtered[p] = noteList.where((note) => note.priority == p).toList();
@@ -216,8 +220,11 @@ class NoteListState extends State<NoteList> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
-                'Priorité ${getPriorityText(priority)}',
-                style: Theme.of(context).textTheme.titleMedium,
+                labels[priority]!,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             MasonryGridView.count(
