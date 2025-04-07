@@ -35,7 +35,7 @@ class DatabaseHelper {
     Directory directory = await getApplicationDocumentsDirectory();
     String path = '${directory.path}/notes.db';
 
-    await deleteDatabase(path); // ⚠️ TEMPORAIRE — à retirer après la première exécution
+    // await deleteDatabase(path); // ⚠️ TEMPORAIRE — à retirer après la première exécution
 
     var notesDatabase = await openDatabase(
       path,
