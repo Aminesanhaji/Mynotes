@@ -168,9 +168,23 @@ class NoteListState extends State<NoteList> {
                 ),
               ),
             )
-          : Container(
-              color: Colors.white,
-              child: getNotesList(),
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 4,
+                    children: const [
+                      Text('❗️ Low'),
+                      Text('❗️❗️ High'),
+                      Text('❗️❗️❗️ Very High'),
+                      Text('❤️ Favori'),
+                    ],
+                  ),
+                ),
+                Expanded(child: buildGroupedNotes()),
+              ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -185,93 +199,120 @@ class NoteListState extends State<NoteList> {
     );
   }
 
-  Widget getNotesList() {
-    return MasonryGridView.count(
-      physics: const BouncingScrollPhysics(),
-      crossAxisCount: axisCount,
-      mainAxisSpacing: 4.0,
-      crossAxisSpacing: 4.0,
-      itemCount: count,
-      itemBuilder: (BuildContext context, int index) {
-        return GestureDetector(
-          onTap: () {
-            navigateToDetail(noteList[index], 'Edit Note');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                  color: colors[noteList[index].color],
-                  border: Border.all(width: 2, color: Colors.black),
-                  borderRadius: BorderRadius.circular(8.0)),
-              child: Column(
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            noteList[index].title,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            getPriorityText(noteList[index].priority),
-                            style: TextStyle(
-                              color: getPriorityColor(noteList[index].priority),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              noteList[index].isFavorite ? Icons.favorite : Icons.favorite_border,
-                              color: Colors.red,
-                            ),
-                            onPressed: () async {
-                              noteList[index].isFavorite = !noteList[index].isFavorite;
-                              await databaseHelper.updateNote(noteList[index]);
-                              updateListView();
-                            },
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            noteList[index].description ?? '',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      Text(
-                        noteList[index].date,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  )
-                ],
+  Widget buildGroupedNotes() {
+    final priorities = [1, 2, 3];
+    final filtered = <int, List<Note>>{};
+    for (var p in priorities) {
+      filtered[p] = noteList.where((note) => note.priority == p).toList();
+    }
+
+    return ListView(
+      children: priorities.map((priority) {
+        final notes = filtered[priority]!;
+        if (notes.isEmpty) return const SizedBox();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                'Priorité ${getPriorityText(priority)}',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-          ),
+            MasonryGridView.count(
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: axisCount,
+              shrinkWrap: true,
+              mainAxisSpacing: 4.0,
+              crossAxisSpacing: 4.0,
+              itemCount: notes.length,
+              itemBuilder: (BuildContext context, int index) {
+                final note = notes[index];
+                return GestureDetector(
+                  onTap: () {
+                    navigateToDetail(note, 'Edit Note');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: colors[note.color],
+                        border: Border.all(width: 2, color: Colors.black),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    note.title,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    getPriorityText(note.priority),
+                                    style: TextStyle(
+                                      color: getPriorityColor(note.priority),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      note.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () async {
+                                      note.isFavorite = !note.isFavorite;
+                                      await databaseHelper.updateNote(note);
+                                      updateListView();
+                                    },
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    note.description ?? '',
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              Text(
+                                note.date,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+          ],
         );
-      },
+      }).toList(),
     );
   }
 
