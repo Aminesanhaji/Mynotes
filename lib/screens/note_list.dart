@@ -24,7 +24,7 @@ class NoteListState extends State<NoteList> {
   int count = 0;
   int axisCount = 2;
   bool isFilteredByFavorite = false;
-  int? priorityFilter; // 1 (!!!), 2 (!!), 3 (!)
+  int? priorityFilter;
 
   @override
   void initState() {
@@ -42,12 +42,9 @@ class NoteListState extends State<NoteList> {
           ? Container()
           : IconButton(
               splashRadius: 22,
-              icon: const Icon(
-                Icons.search,
-                color: Colors.black,
-              ),
+              icon: const Icon(Icons.search, color: Colors.black),
               onPressed: () async {
-                final Note? result = await showSearch<Note?> (
+                final Note? result = await showSearch<Note?>(
                   context: context,
                   delegate: NotesSearch(notes: noteList),
                 );
@@ -57,7 +54,7 @@ class NoteListState extends State<NoteList> {
               },
             ),
       actions: <Widget>[
-        if (!noteList.isEmpty)
+        if (noteList.isNotEmpty)
           Row(
             children: [
               IconButton(
@@ -88,7 +85,7 @@ class NoteListState extends State<NoteList> {
                       count = noteList.length;
                     });
                   } else {
-                    int selectedPriority = 3; // default !
+                    int selectedPriority = 3;
                     if (value == 'High') selectedPriority = 2;
                     if (value == 'Very High') selectedPriority = 1;
 
@@ -101,18 +98,12 @@ class NoteListState extends State<NoteList> {
                   }
                 },
                 itemBuilder: (BuildContext context) {
-                  return [
-                    'Tous',
-                    'Favoris',
-                    'Low',
-                    'High',
-                    'Very High'
-                  ].map((String choice) {
-                    return PopupMenuItem<String>(
-                      value: choice,
-                      child: Text(choice),
-                    );
-                  }).toList();
+                  return ['Tous', 'Favoris', 'Low', 'High', 'Very High']
+                      .map((String choice) => PopupMenuItem<String>(
+                            value: choice,
+                            child: Text(choice),
+                          ))
+                      .toList();
                 },
               ),
               IconButton(
@@ -138,34 +129,28 @@ class NoteListState extends State<NoteList> {
     return Scaffold(
       appBar: myAppBar(),
       body: noteList.isEmpty
-          ? Container(
-              color: Colors.white,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isFilteredByFavorite || priorityFilter != null
-                            ? 'Aucune note trouvée.'
-                            : 'Clique sur le + pour ajouter une note !',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isFilteredByFavorite = false;
-                            priorityFilter = null;
-                          });
-                          updateListView();
-                        },
-                        child: const Text('Retour à toutes les notes'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isFilteredByFavorite || priorityFilter != null
+                        ? 'Aucune note trouvée.'
+                        : 'Clique sur le + pour ajouter une note !',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        isFilteredByFavorite = false;
+                        priorityFilter = null;
+                      });
+                      updateListView();
+                    },
+                    child: const Text('Retour à toutes les notes'),
+                  ),
+                ],
               ),
             )
           : Column(
@@ -174,11 +159,50 @@ class NoteListState extends State<NoteList> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: const [
-                      Text('❗️ Low', style: TextStyle(fontSize: 12)),
-                      Text('❗️❗️ High', style: TextStyle(fontSize: 12)),
-                      Text('❗️❗️❗️ Very High', style: TextStyle(fontSize: 12)),
-                      Text('❤️ Favori', style: TextStyle(fontSize: 12)),
+                    children: [
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '❗️',
+                              style: TextStyle(color: Colors.green, fontSize: 12),
+                            ),
+                            TextSpan(
+                              text: ' Low',
+                              style: TextStyle(color: Colors.black, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '❗️❗️',
+                              style: TextStyle(color: Colors.orange, fontSize: 12),
+                            ),
+                            TextSpan(
+                              text: ' High',
+                              style: TextStyle(color: Colors.black, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '❗️❗️❗️',
+                              style: TextStyle(color: Colors.red, fontSize: 12),
+                            ),
+                            TextSpan(
+                              text: ' Very High',
+                              style: TextStyle(color: Colors.black, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Text('❤️ Favori', style: TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
@@ -328,7 +352,7 @@ class NoteListState extends State<NoteList> {
       case 1:
         return Colors.red;
       case 2:
-        return Colors.yellow;
+        return Colors.orange;
       case 3:
         return Colors.green;
       default:
@@ -350,9 +374,10 @@ class NoteListState extends State<NoteList> {
   }
 
   void navigateToDetail(Note note, String title) async {
-    bool result = await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => NoteDetail(note, title)));
-
+    bool result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NoteDetail(note, title)),
+    );
     if (result == true) {
       updateListView();
     }
