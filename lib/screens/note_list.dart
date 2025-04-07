@@ -24,6 +24,7 @@ class NoteListState extends State<NoteList> {
   int count = 0;
   int axisCount = 2;
   bool isFilteredByFavorite = false;
+  int? priorityFilter; // 1 (!!!), 2 (!!), 3 (!)
 
   @override
   void initState() {
@@ -73,21 +74,40 @@ class NoteListState extends State<NoteList> {
               ),
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'Favoris') {
+                  if (value == 'Tous') {
+                    setState(() {
+                      isFilteredByFavorite = false;
+                      priorityFilter = null;
+                    });
+                    updateListView();
+                  } else if (value == 'Favoris') {
                     setState(() {
                       isFilteredByFavorite = true;
+                      priorityFilter = null;
                       noteList = noteList.where((n) => n.isFavorite).toList();
                       count = noteList.length;
                     });
                   } else {
+                    int selectedPriority = 3; // default !
+                    if (value == 'High') selectedPriority = 2;
+                    if (value == 'Very High') selectedPriority = 1;
+
                     setState(() {
                       isFilteredByFavorite = false;
+                      priorityFilter = selectedPriority;
+                      noteList = noteList.where((n) => n.priority == selectedPriority).toList();
+                      count = noteList.length;
                     });
-                    updateListView();
                   }
                 },
                 itemBuilder: (BuildContext context) {
-                  return ['Tous', 'Favoris'].map((String choice) {
+                  return [
+                    'Tous',
+                    'Favoris',
+                    'Low',
+                    'High',
+                    'Very High'
+                  ].map((String choice) {
                     return PopupMenuItem<String>(
                       value: choice,
                       child: Text(choice),
@@ -127,23 +147,22 @@ class NoteListState extends State<NoteList> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        isFilteredByFavorite
-                            ? 'Aucune note favorite.'
+                        isFilteredByFavorite || priorityFilter != null
+                            ? 'Aucune note trouvée.'
                             : 'Clique sur le + pour ajouter une note !',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      if (isFilteredByFavorite)
-                        const SizedBox(height: 16),
-                      if (isFilteredByFavorite)
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              isFilteredByFavorite = false;
-                            });
-                            updateListView();
-                          },
-                          child: const Text('Retour à toutes les notes'),
-                        ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            isFilteredByFavorite = false;
+                            priorityFilter = null;
+                          });
+                          updateListView();
+                        },
+                        child: const Text('Retour à toutes les notes'),
+                      ),
                     ],
                   ),
                 ),
@@ -200,17 +219,28 @@ class NoteListState extends State<NoteList> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          noteList[index].isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: Colors.red,
-                        ),
-                        onPressed: () async {
-                          noteList[index].isFavorite = !noteList[index].isFavorite;
-                          await databaseHelper.updateNote(noteList[index]);
-                          updateListView();
-                        },
-                      ),
+                      Row(
+                        children: [
+                          Text(
+                            getPriorityText(noteList[index].priority),
+                            style: TextStyle(
+                              color: getPriorityColor(noteList[index].priority),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              noteList[index].isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: Colors.red,
+                            ),
+                            onPressed: () async {
+                              noteList[index].isFavorite = !noteList[index].isFavorite;
+                              await databaseHelper.updateNote(noteList[index]);
+                              updateListView();
+                            },
+                          ),
+                        ],
+                      )
                     ],
                   ),
                   Padding(
