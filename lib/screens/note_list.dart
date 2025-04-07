@@ -7,7 +7,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:notes_app/screens/search_note.dart';
 import 'package:notes_app/utils/widgets.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:notes_app/screens/change_password.dart'; // 👈 import ajouté
+import 'package:notes_app/screens/change_password.dart';
 
 class NoteList extends StatefulWidget {
   const NoteList({Key? key}) : super(key: key);
@@ -23,6 +23,7 @@ class NoteListState extends State<NoteList> {
   List<Note> noteList = [];
   int count = 0;
   int axisCount = 2;
+  bool isFilteredByFavorite = false;
 
   @override
   void initState() {
@@ -45,7 +46,7 @@ class NoteListState extends State<NoteList> {
                 color: Colors.black,
               ),
               onPressed: () async {
-                final Note? result = await showSearch<Note?>(
+                final Note? result = await showSearch<Note?> (
                   context: context,
                   delegate: NotesSearch(notes: noteList),
                 );
@@ -68,6 +69,30 @@ class NoteListState extends State<NoteList> {
                       builder: (_) => const ChangePasswordScreen(),
                     ),
                   );
+                },
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'Favoris') {
+                    setState(() {
+                      isFilteredByFavorite = true;
+                      noteList = noteList.where((n) => n.isFavorite).toList();
+                      count = noteList.length;
+                    });
+                  } else {
+                    setState(() {
+                      isFilteredByFavorite = false;
+                    });
+                    updateListView();
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return ['Tous', 'Favoris'].map((String choice) {
+                    return PopupMenuItem<String>(
+                      value: choice,
+                      child: Text(choice),
+                    );
+                  }).toList();
                 },
               ),
               IconButton(
@@ -98,8 +123,29 @@ class NoteListState extends State<NoteList> {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text('Click on the add button to add a new note!',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isFilteredByFavorite
+                            ? 'Aucune note favorite.'
+                            : 'Clique sur le + pour ajouter une note !',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      if (isFilteredByFavorite)
+                        const SizedBox(height: 16),
+                      if (isFilteredByFavorite)
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              isFilteredByFavorite = false;
+                            });
+                            updateListView();
+                          },
+                          child: const Text('Retour à toutes les notes'),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             )
@@ -154,10 +200,16 @@ class NoteListState extends State<NoteList> {
                           ),
                         ),
                       ),
-                      Text(
-                        getPriorityText(noteList[index].priority),
-                        style: TextStyle(
-                            color: getPriorityColor(noteList[index].priority)),
+                      IconButton(
+                        icon: Icon(
+                          noteList[index].isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                        ),
+                        onPressed: () async {
+                          noteList[index].isFavorite = !noteList[index].isFavorite;
+                          await databaseHelper.updateNote(noteList[index]);
+                          updateListView();
+                        },
                       ),
                     ],
                   ),

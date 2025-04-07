@@ -5,14 +5,17 @@ class Note {
   late String _date;
   late int _priority;
   late int _color;
+  late bool _isFavorite;
 
-  // Constructeur principal
-  Note(this._title, this._date, this._priority, this._color, [String? description]) {
+  // Constructeur
+  Note(this._title, this._date, this._priority, this._color,
+      [String? description, this._isFavorite = false]) {
     _description = description ?? '';
   }
 
-  // Constructeur avec ID (utile pour les updates)
-  Note.withId(this._id, this._title, this._date, this._priority, this._color, [String? description]) {
+  // Constructeur avec ID
+  Note.withId(this._id, this._title, this._date, this._priority, this._color,
+      [String? description, this._isFavorite = false]) {
     _description = description ?? '';
   }
 
@@ -23,8 +26,9 @@ class Note {
   int get priority => _priority;
   int get color => _color;
   String get date => _date;
+  bool get isFavorite => _isFavorite;
 
-  // Setters avec validation
+  // Setters
   set title(String newTitle) {
     if (newTitle.length <= 255) {
       _title = newTitle;
@@ -53,7 +57,11 @@ class Note {
     _date = newDate;
   }
 
-  // Convert a Note object into a Map object
+  set isFavorite(bool value) {
+    _isFavorite = value;
+  }
+
+  // Convert to Map
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{};
     if (_id != null) {
@@ -64,10 +72,11 @@ class Note {
     map['priority'] = _priority;
     map['color'] = _color;
     map['date'] = _date;
+    map['isFavorite'] = _isFavorite ? 1 : 0; // <-- Ajouté
     return map;
   }
 
-  // Extract a Note object from a Map object
+  // From Map
   Note.fromMapObject(Map<String, dynamic> map) {
     _id = map['id'];
     _title = map['title'];
@@ -75,5 +84,6 @@ class Note {
     _priority = map['priority'];
     _color = map['color'];
     _date = map['date'];
+    _isFavorite = (map['isFavorite'] ?? 0) == 1; // <-- Ajouté
   }
 }

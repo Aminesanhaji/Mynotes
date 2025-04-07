@@ -15,11 +15,12 @@ class DatabaseHelper {
   String colPriority = 'priority';
   String colColor = 'color';
   String colDate = 'date';
+  String colIsFavorite = 'isFavorite';
 
   DatabaseHelper._createInstance(); // Named constructor to create instance of DatabaseHelper
 
   factory DatabaseHelper() {
-    _databaseHelper = DatabaseHelper._createInstance(); // Always returns the same instance
+    _databaseHelper = DatabaseHelper._createInstance();
     return _databaseHelper;
   }
 
@@ -31,11 +32,11 @@ class DatabaseHelper {
   }
 
   Future<Database> initializeDatabase() async {
-    // Get the directory path for both Android and iOS to store database.
     Directory directory = await getApplicationDocumentsDirectory();
     String path = '${directory.path}/notes.db';
 
-    // Open/create the database at a given path
+    await deleteDatabase(path); // ⚠️ TEMPORAIRE — à retirer après la première exécution
+
     var notesDatabase = await openDatabase(
       path,
       version: 1,
@@ -46,25 +47,23 @@ class DatabaseHelper {
 
   void _createDb(Database db, int newVersion) async {
     await db.execute(
-      'CREATE TABLE $noteTable($colId INTEGER PRIMARY KEY AUTOINCREMENT, $colTitle TEXT, '
-      '$colDescription TEXT, $colPriority INTEGER, $colColor INTEGER, $colDate TEXT)',
+      'CREATE TABLE $noteTable($colId INTEGER PRIMARY KEY AUTOINCREMENT, '
+      '$colTitle TEXT, $colDescription TEXT, $colPriority INTEGER, '
+      '$colColor INTEGER, $colDate TEXT, $colIsFavorite INTEGER)'
     );
   }
 
-  // Fetch Operation: Get all note objects from database
   Future<List<Map<String, dynamic>>> getNoteMapList() async {
     Database db = await database;
     var result = await db.query(noteTable, orderBy: '$colPriority ASC');
     return result;
   }
 
-  // Insert Operation: Insert a Note object to database
   Future<int> insertNote(Note note) async {
     Database db = await database;
     return await db.insert(noteTable, note.toMap());
   }
 
-  // Update Operation: Update a Note object and save it to database
   Future<int> updateNote(Note note) async {
     Database db = await database;
     return await db.update(
@@ -75,13 +74,11 @@ class DatabaseHelper {
     );
   }
 
-  // Delete Operation: Delete a Note object from database
   Future<int> deleteNote(int id) async {
     Database db = await database;
     return await db.rawDelete('DELETE FROM $noteTable WHERE $colId = $id');
   }
 
-  // Get number of Note objects in database
   Future<int> getCount() async {
     Database db = await database;
     List<Map<String, dynamic>> x =
@@ -90,7 +87,6 @@ class DatabaseHelper {
     return result ?? 0;
   }
 
-  // Get the 'Map List' and convert it to a 'Note List'
   Future<List<Note>> getNoteList() async {
     var noteMapList = await getNoteMapList();
     List<Note> noteList = noteMapList.map((map) => Note.fromMapObject(map)).toList();
