@@ -1,34 +1,30 @@
 class Note {
   int? _id;
-  late String _title;
-  late String _description;
-  late String _date;
-  late int _priority;
-  late int _color;
-  late bool _isFavorite;
+  String _title;
+  String _description;
+  String _date;
+  int _priority, _color;
+  bool isFavorite;
+  List<int> tagIds = [];
 
-  // Constructeur
   Note(this._title, this._date, this._priority, this._color,
-      [String? description, this._isFavorite = false]) {
-    _description = description ?? '';
-  }
+      [this._description = '', this.isFavorite = false]);
 
-  // Constructeur avec ID
   Note.withId(this._id, this._title, this._date, this._priority, this._color,
-      [String? description, this._isFavorite = false]) {
-    _description = description ?? '';
+      [this._description = '', this.isFavorite = false]);
+
+  int? get id => _id;
+
+  set id(int? id) {
+    _id = id;
   }
 
-  // Getters
-  int? get id => _id;
   String get title => _title;
   String get description => _description;
   int get priority => _priority;
   int get color => _color;
   String get date => _date;
-  bool get isFavorite => _isFavorite;
 
-  // Setters
   set title(String newTitle) {
     if (newTitle.length <= 255) {
       _title = newTitle;
@@ -57,13 +53,8 @@ class Note {
     _date = newDate;
   }
 
-  set isFavorite(bool value) {
-    _isFavorite = value;
-  }
-
-  // Convert to Map
   Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{};
+    var map = <String, dynamic>{};
     if (_id != null) {
       map['id'] = _id;
     }
@@ -72,18 +63,16 @@ class Note {
     map['priority'] = _priority;
     map['color'] = _color;
     map['date'] = _date;
-    map['isFavorite'] = _isFavorite ? 1 : 0; // <-- Ajouté
+    map['isFavorite'] = isFavorite ? 1 : 0;
     return map;
   }
 
-  // From Map
-  Note.fromMapObject(Map<String, dynamic> map) {
-    _id = map['id'];
-    _title = map['title'];
-    _description = map['description'] ?? '';
-    _priority = map['priority'];
-    _color = map['color'];
-    _date = map['date'];
-    _isFavorite = (map['isFavorite'] ?? 0) == 1; // <-- Ajouté
-  }
+  Note.fromMapObject(Map<String, dynamic> map)
+      : _id = map['id'],
+        _title = map['title'],
+        _description = map['description'],
+        _priority = map['priority'],
+        _color = map['color'],
+        _date = map['date'],
+        isFavorite = map['isFavorite'] == 1;
 }

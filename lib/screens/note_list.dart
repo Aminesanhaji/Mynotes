@@ -22,10 +22,12 @@ class NoteListState extends State<NoteList> {
   final DatabaseHelper databaseHelper = DatabaseHelper();
   List<Note> fullNoteList = [];
   List<Note> noteList = [];
+  List<Map<String, dynamic>> tagList = [];
   int count = 0;
   int axisCount = 2;
   bool isFilteredByFavorite = false;
   int? priorityFilter;
+  int? tagFilter;
 
   @override
   void initState() {
@@ -70,11 +72,17 @@ class NoteListState extends State<NoteList> {
                   );
                 },
               ),
+              IconButton(
+                icon: const Icon(Icons.label_outline, color: Colors.black),
+                tooltip: "Filtrer par tag",
+                onPressed: () => _showTagFilterDialog(),
+              ),
               PopupMenuButton<String>(
                 onSelected: (value) {
                   setState(() {
                     isFilteredByFavorite = false;
                     priorityFilter = null;
+                    tagFilter = null;
                     noteList = List.from(fullNoteList);
                   });
 
@@ -133,68 +141,89 @@ class NoteListState extends State<NoteList> {
     );
   }
 
+  Future<void> _showTagFilterDialog() async {
+    tagList = await databaseHelper.getAllTags();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Filtrer par tag"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: tagList.length,
+              itemBuilder: (context, index) {
+                final tag = tagList[index];
+                return ListTile(
+                  title: Text(tag['name']),
+                  onTap: () async {
+                    tagFilter = tag['id'];
+                    final allNotes = await databaseHelper.getNoteList();
+                    List<Note> filtered = [];
+                    for (final note in allNotes) {
+                      final tags = await databaseHelper.getTagsForNote(note.id!);
+                      final tagIds = tags.map((e) => e['id']).toList();
+                      if (tagIds.contains(tagFilter)) {
+                        filtered.add(note);
+                      }
+                    }
+                    setState(() {
+                      noteList = filtered;
+                      count = filtered.length;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                tagFilter = null;
+                updateListView();
+                Navigator.of(context).pop();
+              },
+              child: const Text("Réinitialiser"),
+            )
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: myAppBar(),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '❗️',
-                        style: TextStyle(color: Colors.green, fontSize: 12),
-                      ),
-                      TextSpan(
-                        text: ' Low',
-                        style: TextStyle(color: Colors.black, fontSize: 12),
-                      ),
-                    ],
+      body: noteList.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isFilteredByFavorite || priorityFilter != null || tagFilter != null
+                        ? 'Aucune note trouvée.'
+                        : 'Clique sur le + pour ajouter une note !',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ),
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '❗️❗️',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
-                      ),
-                      TextSpan(
-                        text: ' High',
-                        style: TextStyle(color: Colors.black, fontSize: 12),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        isFilteredByFavorite = false;
+                        priorityFilter = null;
+                        tagFilter = null;
+                      });
+                      updateListView();
+                    },
+                    child: const Text('Retour à toutes les notes'),
                   ),
-                ),
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '❗️❗️❗️',
-                        style: TextStyle(color: Colors.red, fontSize: 12),
-                      ),
-                      TextSpan(
-                        text: ' Very High',
-                        style: TextStyle(color: Colors.black, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const Text('❤️ Favori', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: buildGroupedNotesWithDrag(),
-          )
-        ],
-      ),
+                ],
+              ),
+            )
+          : buildGroupedNotesWithDrag(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           navigateToDetail(Note('', '', 3, 0), 'Add Note');
