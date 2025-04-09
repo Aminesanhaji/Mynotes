@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'note_list.dart'; // remplace par ton vrai import
 
 class LockScreen extends StatefulWidget {
-  const LockScreen({Key? key}) : super(key: key);
+  const LockScreen({super.key});
 
   @override
   State<LockScreen> createState() => _LockScreenState();

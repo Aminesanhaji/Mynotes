@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/db_helper/db_helper.dart';
 import 'package:notes_app/modal_class/notes.dart';
 import 'package:notes_app/screens/note_detail.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:notes_app/screens/search_note.dart';
 import 'package:notes_app/utils/widgets.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:notes_app/screens/change_password.dart';
 
 class NoteList extends StatefulWidget {
-  const NoteList({Key? key}) : super(key: key);
+  const NoteList({super.key});
 
   @override
   State<StatefulWidget> createState() {
@@ -231,8 +230,8 @@ class NoteListState extends State<NoteList> {
         tooltip: 'Add Note',
         shape: const CircleBorder(
             side: BorderSide(color: Colors.black, width: 2.0)),
-        child: const Icon(Icons.add, color: Colors.black),
         backgroundColor: Colors.white,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -253,10 +252,10 @@ class NoteListState extends State<NoteList> {
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             DragTarget<Note>(
-              onWillAccept: (incoming) => true,
-              onAccept: (incomingNote) async {
-                incomingNote.priority = priority;
-                await databaseHelper.updateNote(incomingNote);
+              onWillAcceptWithDetails: (incoming) => true,
+              onAcceptWithDetails: (incomingNote) async {
+                incomingNote.data.priority = priority;
+                await databaseHelper.updateNote(incomingNote.data);
                 updateListView();
               },
               builder: (context, candidateData, rejectedData) {
@@ -321,7 +320,7 @@ class NoteListState extends State<NoteList> {
               ],
             ),
             const SizedBox(height: 4),
-            Text(note.description ?? '',
+            Text(note.description,
                 style: Theme.of(context).textTheme.bodyLarge,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 3),

@@ -18,10 +18,10 @@ class PriorityPicker extends StatefulWidget {
   final int selectedIndex;
 
   const PriorityPicker({
-    Key? key,
+    super.key,
     required this.onTap,
     required this.selectedIndex,
-  }) : super(key: key);
+  });
 
   @override
   _PriorityPickerState createState() => _PriorityPickerState();
@@ -94,10 +94,10 @@ class ColorPicker extends StatefulWidget {
   final int selectedIndex;
 
   const ColorPicker({
-    Key? key,
+    super.key,
     required this.onTap,
     required this.selectedIndex,
-  }) : super(key: key);
+  });
 
   @override
   _ColorPickerState createState() => _ColorPickerState();
