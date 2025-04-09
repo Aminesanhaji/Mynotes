@@ -4,27 +4,35 @@ class Note {
   String _description;
   String _date;
   int _priority, _color;
-  bool isFavorite;
-  List<int> tagIds = [];
+  bool _isFavorite;
+  bool _isPrivate;
 
+  // Constructeur principal
   Note(this._title, this._date, this._priority, this._color,
-      [this._description = '', this.isFavorite = false]);
+      {String description = '', bool isFavorite = false, bool isPrivate = false})
+      : _description = description,
+        _isFavorite = isFavorite,
+        _isPrivate = isPrivate;
 
+  // Constructeur avec ID
   Note.withId(this._id, this._title, this._date, this._priority, this._color,
-      [this._description = '', this.isFavorite = false]);
+      {String description = '', bool isFavorite = false, bool isPrivate = false})
+      : _description = description,
+        _isFavorite = isFavorite,
+        _isPrivate = isPrivate;
 
+  // Getters
   int? get id => _id;
-
-  set id(int? id) {
-    _id = id;
-  }
-
   String get title => _title;
   String get description => _description;
   int get priority => _priority;
   int get color => _color;
   String get date => _date;
+  bool get isFavorite => _isFavorite;
+  bool get isPrivate => _isPrivate;
 
+  // Setters
+  set id(int? id) => _id = id;
   set title(String newTitle) {
     if (newTitle.length <= 255) {
       _title = newTitle;
@@ -53,6 +61,10 @@ class Note {
     _date = newDate;
   }
 
+  set isFavorite(bool fav) => _isFavorite = fav;
+  set isPrivate(bool priv) => _isPrivate = priv;
+
+  // Convertir une Note en Map
   Map<String, dynamic> toMap() {
     var map = <String, dynamic>{};
     if (_id != null) {
@@ -63,10 +75,12 @@ class Note {
     map['priority'] = _priority;
     map['color'] = _color;
     map['date'] = _date;
-    map['isFavorite'] = isFavorite ? 1 : 0;
+    map['isFavorite'] = _isFavorite ? 1 : 0;
+    map['isPrivate'] = _isPrivate ? 1 : 0;
     return map;
   }
 
+  // Créer une Note depuis un Map
   Note.fromMapObject(Map<String, dynamic> map)
       : _id = map['id'],
         _title = map['title'],
@@ -74,5 +88,6 @@ class Note {
         _priority = map['priority'],
         _color = map['color'],
         _date = map['date'],
-        isFavorite = map['isFavorite'] == 1;
+        _isFavorite = map['isFavorite'] == 1,
+        _isPrivate = map['isPrivate'] == 1;
 }

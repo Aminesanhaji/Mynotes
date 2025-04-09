@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/db_helper/db_helper.dart';
 import 'package:notes_app/modal_class/notes.dart';
 import 'package:notes_app/screens/note_detail.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:notes_app/screens/search_note.dart';
 import 'package:notes_app/utils/widgets.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:notes_app/screens/change_password.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NoteList extends StatefulWidget {
-  const NoteList({super.key});
+  const NoteList({Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -27,6 +29,7 @@ class NoteListState extends State<NoteList> {
   bool isFilteredByFavorite = false;
   int? priorityFilter;
   int? tagFilter;
+  bool showPrivateNotes = false;
 
   @override
   void initState() {
@@ -70,6 +73,17 @@ class NoteListState extends State<NoteList> {
                     ),
                   );
                 },
+              ),
+              IconButton(
+                splashRadius: 22,
+                icon: Icon(
+                  showPrivateNotes ? Icons.lock_open : Icons.lock_outline,
+                  color: Colors.black,
+                ),
+                tooltip: 'Afficher les notes privées',
+                onPressed: () => showPrivateNotes
+                    ? setState(() => showPrivateNotes = false)
+                    : _promptPassword(context),
               ),
               IconButton(
                 icon: const Icon(Icons.label_outline, color: Colors.black),
@@ -137,6 +151,42 @@ class NoteListState extends State<NoteList> {
             ],
           )
       ],
+    );
+  }
+
+  Future<void> _promptPassword(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPassword = prefs.getString('private_password') ?? '';
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Mot de passe des notes privées'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(hintText: 'Entrez votre mot de passe'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () {
+              if (controller.text == savedPassword) {
+                Navigator.pop(context);
+                setState(() => showPrivateNotes = true);
+                updateListView();
+              } else {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Mot de passe incorrect'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('Valider'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -208,30 +258,31 @@ class NoteListState extends State<NoteList> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        isFilteredByFavorite = false;
-                        priorityFilter = null;
-                        tagFilter = null;
-                      });
-                      updateListView();
-                    },
-                    child: const Text('Retour à toutes les notes'),
-                  ),
+                  if (isFilteredByFavorite || priorityFilter != null || tagFilter != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          isFilteredByFavorite = false;
+                          priorityFilter = null;
+                          tagFilter = null;
+                        });
+                        updateListView();
+                      },
+                      child: const Text('Retour à toutes les notes'),
+                    ),
                 ],
               ),
             )
           : buildGroupedNotesWithDrag(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          navigateToDetail(Note('', '', 3, 0), 'Add Note');
+          navigateToDetail(Note('', '', 3, 0, isPrivate: false), 'Add Note');
         },
         tooltip: 'Add Note',
         shape: const CircleBorder(
             side: BorderSide(color: Colors.black, width: 2.0)),
-        backgroundColor: Colors.white,
         child: const Icon(Icons.add, color: Colors.black),
+        backgroundColor: Colors.white,
       ),
     );
   }
@@ -243,6 +294,8 @@ class NoteListState extends State<NoteList> {
     return ListView(
       children: priorities.map((priority) {
         final notes = noteList.where((note) => note.priority == priority).toList();
+        if (notes.isEmpty) return const SizedBox.shrink();
+        
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -252,10 +305,10 @@ class NoteListState extends State<NoteList> {
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             DragTarget<Note>(
-              onWillAcceptWithDetails: (incoming) => true,
-              onAcceptWithDetails: (incomingNote) async {
-                incomingNote.data.priority = priority;
-                await databaseHelper.updateNote(incomingNote.data);
+              onWillAccept: (incoming) => true,
+              onAccept: (incomingNote) async {
+                incomingNote.priority = priority;
+                await databaseHelper.updateNote(incomingNote);
                 updateListView();
               },
               builder: (context, candidateData, rejectedData) {
@@ -305,6 +358,8 @@ class NoteListState extends State<NoteList> {
                       style: Theme.of(context).textTheme.bodyMedium,
                       overflow: TextOverflow.ellipsis),
                 ),
+                if (note.isPrivate)
+                  const Icon(Icons.lock, size: 18, color: Colors.black),
                 IconButton(
                   icon: Icon(
                     note.isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -320,7 +375,7 @@ class NoteListState extends State<NoteList> {
               ],
             ),
             const SizedBox(height: 4),
-            Text(note.description,
+            Text(note.description ?? '',
                 style: Theme.of(context).textTheme.bodyLarge,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 3),
@@ -359,8 +414,8 @@ class NoteListState extends State<NoteList> {
       noteListFuture.then((noteList) {
         setState(() {
           fullNoteList = noteList;
-          this.noteList = noteList;
-          count = noteList.length;
+          this.noteList = noteList.where((n) => showPrivateNotes || !n.isPrivate).toList();
+          count = this.noteList.length;
         });
       });
     });

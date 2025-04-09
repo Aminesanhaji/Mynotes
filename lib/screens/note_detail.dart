@@ -8,11 +8,11 @@ class NoteDetail extends StatefulWidget {
   final String appBarTitle;
   final Note note;
 
-  const NoteDetail(this.note, this.appBarTitle, {super.key});
+  const NoteDetail(this.note, this.appBarTitle, {Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return NoteDetailState(note, appBarTitle);
+    return NoteDetailState(this.note, this.appBarTitle);
   }
 }
 
@@ -23,45 +23,16 @@ class NoteDetailState extends State<NoteDetail> {
   Note note;
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-  TextEditingController newTagController = TextEditingController();
   int color;
   bool isEdited = false;
-  List<Map<String, dynamic>> availableTags = [];
-  List<int> selectedTagIds = [];
 
   NoteDetailState(this.note, this.appBarTitle) : color = note.color;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchTags();
-  }
-
-  void fetchTags() async {
-    final tags = await helper.getAllTags();
-    final existing = await helper.getTagsForNote(note.id ?? 0);
-    setState(() {
-      availableTags = tags;
-      selectedTagIds = existing.map((e) => e['id'] as int).toList();
-    });
-  }
-
-  void createNewTag(String name) async {
-    if (name.trim().isEmpty) return;
-    int id = await helper.insertTag(name.trim());
-    newTagController.clear();
-    fetchTags();
-    setState(() {
-      isEdited = true;
-      selectedTagIds.add(id);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     titleController.text = note.title;
     descriptionController.text = note.description;
-    color = note.color;
+
     return WillPopScope(
         onWillPop: () async {
           isEdited ? showDiscardDialog(context) : moveToLastScreen();
@@ -124,6 +95,16 @@ class NoteDetailState extends State<NoteDetail> {
                     note.color = index;
                   },
                 ),
+                SwitchListTile(
+                  title: const Text("Note privée"),
+                  value: note.isPrivate,
+                  onChanged: (value) {
+                    setState(() {
+                      note.isPrivate = value;
+                      isEdited = true;
+                    });
+                  },
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextField(
@@ -136,51 +117,6 @@ class NoteDetailState extends State<NoteDetail> {
                     decoration: const InputDecoration.collapsed(
                       hintText: 'Title',
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: newTagController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ajouter un tag',
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () =>
-                            createNewTag(newTagController.text),
-                        icon: const Icon(Icons.add),
-                      )
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Wrap(
-                    spacing: 8,
-                    children: availableTags.map((tag) {
-                      final tagId = tag['id'] as int;
-                      final tagName = tag['name'] as String;
-                      final isSelected = selectedTagIds.contains(tagId);
-                      return FilterChip(
-                        label: Text(tagName),
-                        selected: isSelected,
-                        onSelected: (bool selected) {
-                          setState(() {
-                            isEdited = true;
-                            if (selected) {
-                              selectedTagIds.add(tagId);
-                            } else {
-                              selectedTagIds.remove(tagId);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
                   ),
                 ),
                 Expanded(
@@ -335,14 +271,13 @@ class NoteDetailState extends State<NoteDetail> {
 
   void _save() async {
     moveToLastScreen();
-
     note.date = DateFormat.yMMMd().format(DateTime.now());
     if (note.id != null) {
       await helper.updateNote(note);
     } else {
-      note.id = await helper.insertNote(note);
+      int insertedId = await helper.insertNote(note);
+      note.id = insertedId;
     }
-    await helper.setTagsForNote(note.id!, selectedTagIds);
   }
 
   void _delete() async {
