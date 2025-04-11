@@ -33,9 +33,18 @@ class NoteListState extends State<NoteList> {
 
   @override
   void initState() {
-    super.initState();
-    updateListView();
+  super.initState();
+  _initializePrivatePassword();
+  updateListView();
+}
+
+Future<void> _initializePrivatePassword() async {
+  final prefs = await SharedPreferences.getInstance();
+  if (!prefs.containsKey('private_password')) {
+    await prefs.setString('private_password', '0000');
+    debugPrint("Mot de passe privé initialisé à 0000");
   }
+}
 
   PreferredSizeWidget myAppBar() {
     return AppBar(
