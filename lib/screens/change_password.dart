@@ -9,103 +9,126 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _formKeyGlobal = GlobalKey<FormState>();
+  final _formKeyPrivate = GlobalKey<FormState>();
+
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  String? _errorText;
-  String? _successText;
+  final TextEditingController _oldPrivatePasswordController = TextEditingController();
+  final TextEditingController _newPrivatePasswordController = TextEditingController();
+  final TextEditingController _confirmPrivatePasswordController = TextEditingController();
 
-  Future<void> _changePassword() async {
+  Future<void> _changePassword({required bool isPrivate}) async {
     final prefs = await SharedPreferences.getInstance();
-    final currentPassword = prefs.getString('note_password') ?? '';
+    final oldPassword = isPrivate ? _oldPrivatePasswordController.text : _oldPasswordController.text;
+    final newPassword = isPrivate ? _newPrivatePasswordController.text : _newPasswordController.text;
+    final confirmPassword = isPrivate ? _confirmPrivatePasswordController.text : _confirmPasswordController.text;
 
-    setState(() {
-      _errorText = null;
-      _successText = null;
-    });
+    final savedPassword = prefs.getString(isPrivate ? 'private_password' : 'password') ?? '';
 
-    if (_oldPasswordController.text != currentPassword) {
-      setState(() {
-        _errorText = 'Ancien mot de passe incorrect.';
-      });
+    if (oldPassword != savedPassword) {
+      _showMessage('Ancien mot de passe incorrect', isError: true);
       return;
     }
 
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      setState(() {
-        _errorText = 'Les mots de passe ne correspondent pas.';
-      });
+    if (newPassword != confirmPassword) {
+      _showMessage('Les mots de passe ne correspondent pas', isError: true);
       return;
     }
 
-    if (_newPasswordController.text.length < 4) {
-      setState(() {
-        _errorText = 'Le mot de passe doit contenir au moins 4 caractères.';
-      });
-      return;
+    await prefs.setString(isPrivate ? 'private_password' : 'password', newPassword);
+    _showMessage('Mot de passe ${isPrivate ? "privé" : "global"} mis à jour avec succès');
+
+    if (isPrivate) {
+      _oldPrivatePasswordController.clear();
+      _newPrivatePasswordController.clear();
+      _confirmPrivatePasswordController.clear();
+    } else {
+      _oldPasswordController.clear();
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
     }
+  }
 
-    await prefs.setString('note_password', _newPasswordController.text);
-    setState(() {
-      _successText = 'Mot de passe changé avec succès ✅';
-    });
-
-    _oldPasswordController.clear();
-    _newPasswordController.clear();
-    _confirmPasswordController.clear();
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Changer le mot de passe'),
+        title: const Text("Changer les mots de passe"),
         backgroundColor: Colors.deepPurple,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            if (_errorText != null)
-              Text(_errorText!, style: const TextStyle(color: Colors.red)),
-            if (_successText != null)
-              Text(_successText!, style: const TextStyle(color: Colors.green)),
-
-            const SizedBox(height: 16),
-            TextField(
-              controller: _oldPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Ancien mot de passe',
-                border: OutlineInputBorder(),
-              ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          const Text("🔒 Mot de passe global", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Form(
+            key: _formKeyGlobal,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _oldPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Ancien mot de passe'),
+                ),
+                TextFormField(
+                  controller: _newPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Nouveau mot de passe'),
+                ),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Confirmer le mot de passe'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => _changePassword(isPrivate: false),
+                  child: const Text('Changer le mot de passe global'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Nouveau mot de passe',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          const Divider(height: 40, thickness: 1.5),
+          const Text("🛡️ Mot de passe des notes privées", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Form(
+            key: _formKeyPrivate,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _oldPrivatePasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Ancien mot de passe'),
+                ),
+                TextFormField(
+                  controller: _newPrivatePasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Nouveau mot de passe'),
+                ),
+                TextFormField(
+                  controller: _confirmPrivatePasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Confirmer le mot de passe'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => _changePassword(isPrivate: true),
+                  child: const Text('Changer le mot de passe privé'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirmer le mot de passe',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _changePassword,
-              child: const Text('Changer le mot de passe'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
