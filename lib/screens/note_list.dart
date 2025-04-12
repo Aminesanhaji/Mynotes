@@ -114,25 +114,27 @@ Future<void> _initializePrivatePassword() async {
                   if (value == 'Favoris') {
                     setState(() {
                       isFilteredByFavorite = true;
-                      noteList = fullNoteList.where((n) => n.isFavorite).toList();
+                      noteList = fullNoteList.where((n) => n.isFavorite && (showPrivateNotes || !n.isPrivate)).toList();
                       count = noteList.length;
                     });
                   } else if (value == 'Low') {
                     setState(() {
                       priorityFilter = 3;
-                      noteList = fullNoteList.where((n) => n.priority == 3).toList();
+                      noteList = fullNoteList.where((n) => n.priority == 3 && (showPrivateNotes || !n.isPrivate)).toList();
                       count = noteList.length;
                     });
                   } else if (value == 'High') {
                     setState(() {
                       priorityFilter = 2;
-                      noteList = fullNoteList.where((n) => n.priority == 2).toList();
+                      noteList = fullNoteList.where((n) => n.priority == 2 && (showPrivateNotes || !n.isPrivate)).toList();
+
                       count = noteList.length;
                     });
                   } else if (value == 'Very High') {
                     setState(() {
                       priorityFilter = 1;
-                      noteList = fullNoteList.where((n) => n.priority == 1).toList();
+                      noteList = fullNoteList.where((n) => n.priority == 1 && (showPrivateNotes || !n.isPrivate)).toList();
+
                       count = noteList.length;
                     });
                   } else {
