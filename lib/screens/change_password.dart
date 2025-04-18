@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({Key? key}) : super(key: key);
+  const ChangePasswordScreen({super.key});
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -112,7 +112,7 @@ class _GlobalPasswordTabState extends State<GlobalPasswordTab> {
 }
 
 class PrivatePasswordTab extends StatefulWidget {
-  const PrivatePasswordTab({Key? key}) : super(key: key);
+  const PrivatePasswordTab({super.key});
 
   @override
   State<PrivatePasswordTab> createState() => _PrivatePasswordTabState();
